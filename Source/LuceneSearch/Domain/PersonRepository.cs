@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace LuceneSearch.Domain
 {
-    public class PersonRepository
+    public sealed class PersonRepository
     {
         public List<Person> GetAll()
         {

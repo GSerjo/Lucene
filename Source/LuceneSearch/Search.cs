@@ -80,7 +80,7 @@ namespace LuceneSearch
                 {
                     Query query = MultiFieldQueryParser.Parse(Version.LUCENE_30, searchQuery, _fields, _searchFlags, analyzer);
                     ScoreDoc[] hits = searcher.Search(query, null, limit, Sort.INDEXORDER).ScoreDocs;
-                    List<Person> results = hits.Select(hit => CreatePerson(searcher.Doc(hit.Doc))).ToList();
+                    List<Person> results = hits.Select(x => CreatePerson(searcher.Doc(x.Doc))).ToList();
                     return results;
                 }
             }

@@ -17,6 +17,8 @@ namespace LuceneSearch
     public sealed class Search
     {
         private const string IndexDirectoryName = "LuceneIndex";
+        private static readonly Occur[] _searchFlags = { Occur.SHOULD, Occur.SHOULD, Occur.SHOULD };
+        private readonly string[] _fields = { "Id", "FirstName", "LastName" };
         private readonly string _indexDirectoryPath;
         private FSDirectory _indexDirectory;
 
@@ -71,14 +73,12 @@ namespace LuceneSearch
                 return new List<Person>();
             }
 
-            int limit = 100;
+            int limit = 10;
             using (var analyzer = new StandardAnalyzer(Version.LUCENE_30))
             {
                 using (var searcher = new IndexSearcher(GetIndexDirectory(), true))
                 {
-                    var fields = new[] { "Id", "FirstName", "LastName" };
-                    var parser = new MultiFieldQueryParser(Version.LUCENE_30, fields, analyzer);
-                    Query query = ParseQuery(searchQuery, parser);
+                    Query query = MultiFieldQueryParser.Parse(Version.LUCENE_30, searchQuery, _fields, _searchFlags, analyzer);
                     ScoreDoc[] hits = searcher.Search(query, null, limit, Sort.INDEXORDER).ScoreDocs;
                     List<Person> results = hits.Select(hit => CreatePerson(searcher.Doc(hit.Doc))).ToList();
                     return results;

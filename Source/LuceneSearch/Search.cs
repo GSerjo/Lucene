@@ -17,6 +17,7 @@ namespace LuceneSearch
     public sealed class Search
     {
         private const string IndexDirectoryName = "LuceneIndex";
+        private static readonly DuplicateFilter _duplicateFilter = new DuplicateFilter("Id");
         private static readonly Occur[] _searchFlags = { Occur.SHOULD, Occur.SHOULD, Occur.SHOULD };
         private readonly string[] _fields = { "Id", "FirstName", "LastName" };
         private readonly string _indexDirectoryPath;
@@ -36,8 +37,10 @@ namespace LuceneSearch
                 {
                     foreach (Person person in persons)
                     {
-                        AddPersonToIndex(person, writer);
+                        Document document = CreateDocument(person);
+                        writer.AddDocument(document);
                     }
+                    writer.Optimize();
                 }
             }
         }
@@ -76,20 +79,21 @@ namespace LuceneSearch
             int limit = 10;
             using (var analyzer = new StandardAnalyzer(Version.LUCENE_30))
             {
-                using (var searcher = new IndexSearcher(GetIndexDirectory(), true))
+                using (IndexSearcher searcher = GetIndexSearcher())
                 {
                     Query query = MultiFieldQueryParser.Parse(Version.LUCENE_30, searchQuery, _fields, _searchFlags, analyzer);
-                    ScoreDoc[] hits = searcher.Search(query, null, limit, Sort.INDEXORDER).ScoreDocs;
+
+                    ScoreDoc[] hits = searcher.Search(query, _duplicateFilter, limit, Sort.INDEXORDER).ScoreDocs;
                     List<Person> results = hits.Select(x => CreatePerson(searcher.Doc(x.Doc))).ToList();
                     return results;
                 }
             }
         }
 
-        private void AddPersonToIndex(Person person, IndexWriter writer)
+        private Document CreateDocument(Person person)
         {
-            var searchQuery = new TermQuery(new Term("Id", person.Id.ToString()));
-            writer.DeleteDocuments(searchQuery);
+            //            var searchQuery = new TermQuery(new Term("Id", person.Id.ToString()));
+            //            writer.DeleteDocuments(searchQuery);
 
             var document = new Document();
 
@@ -97,7 +101,7 @@ namespace LuceneSearch
             document.Add(new Field("FirstName", person.FirstName, Field.Store.YES, Field.Index.ANALYZED));
             document.Add(new Field("LastName", person.LastName, Field.Store.YES, Field.Index.ANALYZED));
 
-            writer.AddDocument(document);
+            return document;
         }
 
         private Person CreatePerson(Document document)
@@ -126,6 +130,13 @@ namespace LuceneSearch
                 File.Delete(lockFile);
             }
             return _indexDirectory;
+        }
+
+        private IndexSearcher GetIndexSearcher()
+        {
+            var ramDirectory = new RAMDirectory(GetIndexDirectory());
+            var indexSearcher = new IndexSearcher(ramDirectory, true);
+            return indexSearcher;
         }
 
         private Query ParseQuery(string searchQuery, QueryParser parser)

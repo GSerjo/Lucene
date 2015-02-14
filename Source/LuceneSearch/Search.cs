@@ -98,8 +98,12 @@ namespace LuceneSearch
             var document = new Document();
 
             document.Add(new Field("Id", person.Id.ToString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
-            document.Add(new Field("FirstName", person.FirstName, Field.Store.YES, Field.Index.ANALYZED));
-            document.Add(new Field("LastName", person.LastName, Field.Store.YES, Field.Index.ANALYZED));
+
+            document.Add(new Field("FirstName", person.FirstName.ToLower(), Field.Store.NO, Field.Index.ANALYZED));
+            document.Add(new Field("LastName", person.LastName.ToLower(), Field.Store.NO, Field.Index.ANALYZED));
+
+            document.Add(new Field("FirstName_Display", person.FirstName, Field.Store.YES, Field.Index.NOT_ANALYZED));
+            document.Add(new Field("LastName_Display", person.LastName, Field.Store.YES, Field.Index.NOT_ANALYZED));
 
             return document;
         }
@@ -109,8 +113,8 @@ namespace LuceneSearch
             return new Person
             {
                 Id = Convert.ToInt32(document.Get("Id")),
-                FirstName = document.Get("FirstName"),
-                LastName = document.Get("LastName")
+                FirstName = document.Get("FirstName_Display"),
+                LastName = document.Get("LastName_Display")
             };
         }
 
